@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>종교 시설 지도 서비스</title>
 
     <style>
@@ -44,7 +46,7 @@
             border-bottom: 1px solid #eee;
         }
 
-        /* 탭 영역 */
+        /* 탭 메뉴 */
         .tab-container {
             display: flex;
             flex-wrap: wrap;
@@ -140,7 +142,7 @@
             background-color: white;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
     </style>
@@ -153,6 +155,7 @@
         <!-- 왼쪽 영역 -->
         <div class="sidebar">
 
+            <!-- 제목 -->
             <div class="title">
                 종교 시설 지도
             </div>
@@ -192,7 +195,7 @@
 
         </div>
 
-        <!-- 지도 영역 -->
+        <!-- 오른쪽 지도 영역 -->
         <div class="map-area">
 
             <!-- 현재 위치 버튼 -->
@@ -236,6 +239,9 @@
 
         // 로드뷰 클라이언트
         let roadviewClient;
+
+        // 현재 선택된 종교
+        let currentReligion = "";
 
         // 지도 로딩 완료 후 실행
         kakao.maps.load(function () {
@@ -288,7 +294,7 @@
                 kakao.maps.MapTypeId.TRAFFIC
             );
 
-            // 현재 위치 마커
+            // 현재 위치 마커 생성
             currentMarker = new kakao.maps.Marker({
                 map: map,
                 position: currentPosition
@@ -322,7 +328,7 @@
             roadviewClient =
                 new kakao.maps.RoadviewClient();
 
-            // 기본 검색 실행
+            // 기본 검색
             searchReligion(
                 "절",
                 document.querySelector(".tab-button")
@@ -333,10 +339,13 @@
         // 종교 시설 검색 함수
         function searchReligion(keyword, buttonElement) {
 
+            // 현재 종교 저장
+            currentReligion = keyword;
+
             // 기존 마커 제거
             removeMarkers();
 
-            // 탭 활성화 초기화
+            // 탭 활성화 제거
             document
                 .querySelectorAll(".tab-button")
                 .forEach(function (button) {
@@ -366,7 +375,9 @@
 
                 displayPlaces(data);
 
-            } else {
+            }
+
+            else {
 
                 alert("검색 결과가 없습니다.");
 
@@ -395,7 +406,7 @@
 
                 // 마커 이미지 생성
                 const markerImage =
-                    createMarkerImage(place.place_name);
+                    createMarkerImage();
 
                 // 마커 생성
                 const marker = new kakao.maps.Marker({
@@ -408,7 +419,7 @@
 
                 markers.push(marker);
 
-                // 지도 범위 추가
+                // 지도 범위 확장
                 bounds.extend(position);
 
                 // 리스트 아이템 생성
@@ -462,39 +473,33 @@
         }
 
         // 마커 이미지 생성 함수
-        function createMarkerImage(placeName) {
+        function createMarkerImage() {
 
             let imagePath = "";
 
             // 절
-            if (placeName.includes("절")) {
+            if (currentReligion === "절") {
 
                 imagePath = "Bu.jpeg";
 
             }
 
             // 교회
-            else if (
-                placeName.includes("교회")
-            ) {
+            else if (currentReligion === "교회") {
 
                 imagePath = "Ch.jpeg";
 
             }
 
             // 성당
-            else if (
-                placeName.includes("성당")
-            ) {
+            else if (currentReligion === "성당") {
 
                 imagePath = "Maria.jpeg";
 
             }
 
             // 모스크
-            else if (
-                placeName.includes("모스크")
-            ) {
+            else if (currentReligion === "모스크") {
 
                 imagePath = "Mu.jpeg";
 
@@ -570,4 +575,5 @@
     </script>
 
 </body>
+
 </html>
