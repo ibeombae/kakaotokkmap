@@ -1,402 +1,461 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전국 영화 특별관 찾기</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>종교 시설 지도 서비스</title>
 
     <style>
-        /* 기본 초기화 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body, html {
+        body {
             width: 100%;
-            height: 100%;
-            font-family: 'Malgun Gothic', sans-serif;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
         }
 
-        /* 전체 레이아웃 */
+        /* 전체 화면 */
         .container {
             display: flex;
             width: 100%;
-            height: 100vh;
+            height: 100%;
         }
 
-        /* 사이드바 */
-        #sidebar {
+        /* 왼쪽 사이드바 */
+        .sidebar {
             width: 360px;
-            height: 100%;
-            background-color: #f8f9fa;
+            background-color: white;
             border-right: 1px solid #ddd;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        /* 지도 */
-        #map {
-            flex: 1;
-            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         /* 제목 */
         .title {
-            margin-bottom: 20px;
+            padding: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
         }
 
-        /* 탭 버튼 */
+        /* 탭 메뉴 */
         .tab-container {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
         }
 
         .tab-button {
-            flex: 1;
-            padding: 12px;
+            padding: 10px 14px;
             border: none;
             border-radius: 8px;
+            background-color: #f1f1f1;
             cursor: pointer;
-            background-color: #e9ecef;
             font-weight: bold;
-            transition: 0.2s;
         }
 
-        .tab-button.active {
+        .tab-button:hover {
+            background-color: #ddd;
+        }
+
+        .active-tab {
             background-color: #fee500;
         }
 
-        /* 리스트 */
-        #places-list {
+        /* 검색 결과 */
+        .result-list {
+            flex: 1;
+            overflow-y: auto;
             list-style: none;
+            padding: 15px;
         }
 
-        #places-list li {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
+        .result-item {
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
             cursor: pointer;
             transition: 0.2s;
         }
 
-        #places-list li:hover {
-            background-color: #f1f3f5;
+        .result-item:hover {
+            background-color: #f5f5f5;
         }
 
-        #places-list h4 {
+        .place-name {
+            font-size: 16px;
+            font-weight: bold;
             margin-bottom: 6px;
-            color: #222;
         }
 
-        #places-list p {
+        .place-address {
             font-size: 13px;
             color: #666;
         }
 
-        .badge {
-            display: inline-block;
-            margin-top: 5px;
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-            background-color: #222;
-            color: white;
+        /* 지도 영역 */
+        .map-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 로드뷰 */
+        #roadview {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 250px;
+            border: 3px solid white;
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 10;
         }
     </style>
 </head>
 
 <body>
 
-<div class="container">
+    <div class="container">
 
-    <!-- 왼쪽 사이드바 -->
-    <div id="sidebar">
+        <!-- 왼쪽 영역 -->
+        <div class="sidebar">
 
-        <div class="title">
-            <h2>🎬 전국 영화 특별관 찾기</h2>
+            <div class="title">
+                종교 시설 지도
+            </div>
+
+            <!-- 탭 메뉴 -->
+            <div class="tab-container">
+
+                <button class="tab-button active-tab" onclick="searchReligion('절', this)">
+                    절
+                </button>
+
+                <button class="tab-button" onclick="searchReligion('교회', this)">
+                    교회
+                </button>
+
+                <button class="tab-button" onclick="searchReligion('성당', this)">
+                    성당
+                </button>
+
+                <button class="tab-button" onclick="searchReligion('모스크', this)">
+                    모스크
+                </button>
+
+                <button class="tab-button" onclick="searchReligion('원불교', this)">
+                    원불교
+                </button>
+
+            </div>
+
+            <!-- 검색 결과 -->
+            <ul class="result-list" id="resultList"></ul>
+
         </div>
 
-        <!-- 탭 -->
-        <div class="tab-container">
-            <button class="tab-button active" onclick="searchIMAX()">
-                🍿 IMAX
-            </button>
+        <!-- 지도 -->
+        <div class="map-area">
 
-            <button class="tab-button" onclick="searchDolby()">
-                🌿 Dolby Cinema
-            </button>
+            <div id="map"></div>
+
+            <!-- 로드뷰 -->
+            <div id="roadview"></div>
+
         </div>
-
-        <!-- 검색 결과 -->
-        <ul id="places-list"></ul>
 
     </div>
 
-    <!-- 지도 -->
-    <div id="map"></div>
+    <!-- 카카오맵 SDK -->
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=70a1bb5c7d8e1e60565bfc6a59b8266f&libraries=services&autoload=false"></script>
 
-</div>
+    <script>
 
-<!-- 카카오맵 -->
-<script type="text/javascript"
-src="//dapi.kakao.com/v2/maps/sdk.js?appkey=70a1bb5c7d8e1e60565bfc6a59b8266f&libraries=services"></script>
+        // 지도 객체
+        let map;
 
-<script>
+        // 장소 검색 객체
+        let placesService;
 
-    let map;
-    let placeService;
+        // 마커 배열
+        let markers = [];
 
-    let userLatitude;
-    let userLongitude;
+        // 로드뷰 객체
+        let roadview;
 
-    let markers = [];
-    let currentMarker = null;
+        // 로드뷰 클라이언트
+        let roadviewClient;
 
-    /* 현재 활성 탭 */
-    let currentCategory = "IMAX";
+        // 현재 위치
+        let currentPosition;
 
-    /* IMAX 영화관 키워드 */
-    const imaxKeywords = [
-        "CGV IMAX",
-        "아이맥스"
-    ];
+        // 지도 로딩 완료 후 실행
+        kakao.maps.load(function () {
 
-    /* Dolby Cinema 키워드 */
-    const dolbyKeywords = [
-        "Dolby Cinema",
-        "돌비시네마"
-    ];
+            // 위치 권한 요청
+            navigator.geolocation.getCurrentPosition(
 
-    /* 지도 초기화 */
-    function initMap(latitude, longitude) {
+                function (position) {
 
-        const mapContainer = document.getElementById('map');
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
 
-        const mapOption = {
-            center: new kakao.maps.LatLng(latitude, longitude),
-            level: 6
-        };
-
-        map = new kakao.maps.Map(mapContainer, mapOption);
-
-        placeService = new kakao.maps.services.Places();
-
-        displayCurrentLocation(latitude, longitude);
-
-        searchIMAX();
-    }
-
-    /* 현재 위치 표시 */
-    function displayCurrentLocation(latitude, longitude) {
-
-        const currentPosition = new kakao.maps.LatLng(latitude, longitude);
-
-        const currentImage = new kakao.maps.MarkerImage(
-            "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png",
-            new kakao.maps.Size(24, 35)
-        );
-
-        currentMarker = new kakao.maps.Marker({
-            map: map,
-            position: currentPosition,
-            image: currentImage
-        });
-
-        const infoWindow = new kakao.maps.InfoWindow({
-            content: '<div style="padding:5px;">📍 현재 위치</div>'
-        });
-
-        infoWindow.open(map, currentMarker);
-    }
-
-    /* 사용자 위치 가져오기 */
-    if (navigator.geolocation) {
-
-        navigator.geolocation.getCurrentPosition(function(position) {
-
-            userLatitude = position.coords.latitude;
-            userLongitude = position.coords.longitude;
-
-            initMap(userLatitude, userLongitude);
-
-        }, function(error) {
-
-            console.error(error);
-
-            userLatitude = 37.566826;
-            userLongitude = 126.9786567;
-
-            initMap(userLatitude, userLongitude);
-
-        });
-
-    } else {
-
-        userLatitude = 37.566826;
-        userLongitude = 126.9786567;
-
-        initMap(userLatitude, userLongitude);
-    }
-
-    /* 탭 활성화 */
-    function activateTab(index) {
-
-        const buttons = document.querySelectorAll('.tab-button');
-
-        buttons.forEach(button => {
-            button.classList.remove('active');
-        });
-
-        buttons[index].classList.add('active');
-    }
-
-    /* IMAX 검색 */
-    function searchIMAX() {
-
-        currentCategory = "IMAX";
-
-        activateTab(0);
-
-        searchSpecialCinema(imaxKeywords, "IMAX");
-    }
-
-    /* Dolby 검색 */
-    function searchDolby() {
-
-        currentCategory = "Dolby";
-
-        activateTab(1);
-
-        searchSpecialCinema(dolbyKeywords, "Dolby");
-    }
-
-    /* 특별관 검색 */
-    function searchSpecialCinema(keywordArray, type) {
-
-        removeMarkers();
-
-        document.getElementById('places-list').innerHTML = '';
-
-        const bounds = new kakao.maps.LatLngBounds();
-
-        keywordArray.forEach(keyword => {
-
-            /* CT1 카테고리(문화시설) 검색 */
-            placeService.keywordSearch(
-                keyword,
-                function(data, status) {
-
-                    if (status === kakao.maps.services.Status.OK) {
-
-                        displayPlaces(data, type, bounds);
-
-                    }
+                    createMap(latitude, longitude);
 
                 },
-                {
-                    category_group_code: 'CT1',
-                    location: new kakao.maps.LatLng(userLatitude, userLongitude),
-                    radius: 50000
+
+                function () {
+
+                    // 실패 시 서울시청
+                    createMap(37.5665, 126.9780);
+
                 }
+
             );
 
         });
-    }
 
-    /* 검색 결과 표시 */
-    function displayPlaces(places, type, bounds) {
+        // 지도 생성 함수
+        function createMap(latitude, longitude) {
 
-        const listElement = document.getElementById('places-list');
+            currentPosition = new kakao.maps.LatLng(latitude, longitude);
 
-        places.forEach(place => {
+            // 지도 생성
+            map = new kakao.maps.Map(
+                document.getElementById("map"),
+                {
+                    center: currentPosition,
+                    level: 5
+                }
+            );
 
-            const position = new kakao.maps.LatLng(place.y, place.x);
+            // 교통 정보 표시
+            map.addOverlayMapTypeId(kakao.maps.MapTypeId.TRAFFIC);
 
-            bounds.extend(position);
+            // 현재 위치 마커
+            const currentMarker = new kakao.maps.Marker({
+                map: map,
+                position: currentPosition
+            });
 
-            createMarker(position, place.place_name, type);
+            // 현재 위치 인포윈도우
+            const infoWindow = new kakao.maps.InfoWindow({
+                content: "<div style='padding:5px;'>현재 위치</div>"
+            });
 
-            /* 리스트 생성 */
-            const item = document.createElement('li');
+            infoWindow.open(map, currentMarker);
 
-            item.innerHTML = `
-                <h4>${place.place_name}</h4>
-                <p>${place.address_name}</p>
-                <span class="badge">${type}</span>
-            `;
+            // 장소 검색 서비스 생성
+            placesService = new kakao.maps.services.Places();
 
-            /* 리스트 클릭 시 이동 */
-            item.onclick = function() {
+            // 로드뷰 생성
+            roadview = new kakao.maps.Roadview(
+                document.getElementById("roadview")
+            );
 
-                map.panTo(position);
+            roadviewClient = new kakao.maps.RoadviewClient();
 
-            };
-
-            listElement.appendChild(item);
-
-        });
-
-        map.setBounds(bounds);
-    }
-
-    /* 마커 생성 */
-    function createMarker(position, title, type) {
-
-        let imageUrl;
-
-        /* 카테고리별 다른 마커 */
-        if (type === "IMAX") {
-
-            imageUrl = "https://cdn-icons-png.flaticon.com/512/1046/1046784.png";
-
-        } else {
-
-            imageUrl = "https://cdn-icons-png.flaticon.com/512/427/427735.png";
+            // 기본 검색 실행
+            searchReligion("절", document.querySelector(".tab-button"));
 
         }
 
-        const markerImage = new kakao.maps.MarkerImage(
-            imageUrl,
-            new kakao.maps.Size(45, 45)
-        );
+        // 종교 시설 검색 함수
+        function searchReligion(keyword, buttonElement) {
 
-        const marker = new kakao.maps.Marker({
-            map: map,
-            position: position,
-            title: title,
-            image: markerImage
-        });
+            // 탭 스타일 초기화
+            document.querySelectorAll(".tab-button")
+                .forEach(function (button) {
+                    button.classList.remove("active-tab");
+                });
 
-        markers.push(marker);
+            buttonElement.classList.add("active-tab");
 
-        /* 인포윈도우 */
-        const infoWindow = new kakao.maps.InfoWindow({
-            content: `
-                <div style="padding:8px; font-size:13px;">
-                    🎬 ${title}<br>
-                    특별관: ${type}
-                </div>
-            `
-        });
+            // 기존 마커 제거
+            removeMarkers();
 
-        kakao.maps.event.addListener(marker, 'click', function() {
-            infoWindow.open(map, marker);
-        });
-    }
+            // 검색 실행
+            placesService.keywordSearch(
+                keyword,
+                placesSearchCallback
+            );
 
-    /* 기존 마커 제거 */
-    function removeMarkers() {
-
-        for (let i = 0; i < markers.length; i++) {
-            markers[i].setMap(null);
         }
 
-        markers = [];
-    }
+        // 검색 결과 처리
+        function placesSearchCallback(data, status) {
 
-</script>
+            if (status === kakao.maps.services.Status.OK) {
+
+                displayPlaces(data);
+
+            } else {
+
+                alert("검색 결과가 없습니다.");
+
+            }
+
+        }
+
+        // 장소 표시 함수
+        function displayPlaces(places) {
+
+            const resultList = document.getElementById("resultList");
+
+            resultList.innerHTML = "";
+
+            const bounds = new kakao.maps.LatLngBounds();
+
+            places.forEach(function (place) {
+
+                const position = new kakao.maps.LatLng(place.y, place.x);
+
+                // 마커 이미지 설정
+                const markerImage = createMarkerImage(place.place_name);
+
+                // 마커 생성
+                const marker = new kakao.maps.Marker({
+                    map: map,
+                    position: position,
+                    image: markerImage
+                });
+
+                markers.push(marker);
+
+                bounds.extend(position);
+
+                // 리스트 생성
+                const item = document.createElement("li");
+
+                item.className = "result-item";
+
+                item.innerHTML = `
+                    <div class="place-name">
+                        ${place.place_name}
+                    </div>
+
+                    <div class="place-address">
+                        ${place.address_name || "주소 정보 없음"}
+                    </div>
+                `;
+
+                // 클릭 이벤트
+                item.addEventListener("click", function () {
+
+                    map.setCenter(position);
+                    map.setLevel(3);
+
+                    showRoadview(position);
+
+                });
+
+                // 마커 클릭 이벤트
+                kakao.maps.event.addListener(marker, "click", function () {
+
+                    showRoadview(position);
+
+                });
+
+                resultList.appendChild(item);
+
+            });
+
+            map.setBounds(bounds);
+
+        }
+
+        // 마커 이미지 생성 함수
+        function createMarkerImage(placeName) {
+
+            let imageUrl = "";
+
+            // 종교별 마커 이미지
+            if (placeName.includes("절")) {
+
+                imageUrl =
+                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png";
+
+            } else if (placeName.includes("교회")) {
+
+                imageUrl =
+                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png";
+
+            } else if (placeName.includes("성당")) {
+
+                imageUrl =
+                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_blue.png";
+
+            } else if (placeName.includes("모스크")) {
+
+                imageUrl =
+                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_green.png";
+
+            } else {
+
+                imageUrl =
+                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_yellow.png";
+
+            }
+
+            const imageSize = new kakao.maps.Size(32, 35);
+
+            return new kakao.maps.MarkerImage(
+                imageUrl,
+                imageSize
+            );
+
+        }
+
+        // 로드뷰 표시 함수
+        function showRoadview(position) {
+
+            roadviewClient.getNearestPanoId(
+                position,
+                50,
+                function (panoId) {
+
+                    if (panoId) {
+
+                        roadview.setPanoId(
+                            panoId,
+                            position
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+        // 마커 제거 함수
+        function removeMarkers() {
+
+            markers.forEach(function (marker) {
+
+                marker.setMap(null);
+
+            });
+
+            markers = [];
+
+        }
+
+    </script>
 
 </body>
 </html>
