@@ -6,6 +6,7 @@
     <title>종교 시설 지도 서비스</title>
 
     <style>
+
         * {
             margin: 0;
             padding: 0;
@@ -15,11 +16,11 @@
         body {
             width: 100%;
             height: 100vh;
-            font-family: Arial, sans-serif;
             overflow: hidden;
+            font-family: Arial, sans-serif;
         }
 
-        /* 전체 화면 */
+        /* 전체 레이아웃 */
         .container {
             display: flex;
             width: 100%;
@@ -38,12 +39,12 @@
         /* 제목 */
         .title {
             padding: 20px;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             border-bottom: 1px solid #eee;
         }
 
-        /* 탭 메뉴 */
+        /* 탭 영역 */
         .tab-container {
             display: flex;
             flex-wrap: wrap;
@@ -59,6 +60,7 @@
             background-color: #f1f1f1;
             cursor: pointer;
             font-weight: bold;
+            transition: 0.2s;
         }
 
         .tab-button:hover {
@@ -78,9 +80,9 @@
         }
 
         .result-item {
+            padding: 12px;
             border: 1px solid #eee;
             border-radius: 10px;
-            padding: 12px;
             margin-bottom: 12px;
             cursor: pointer;
             transition: 0.2s;
@@ -115,15 +117,32 @@
         /* 로드뷰 */
         #roadview {
             position: absolute;
-            bottom: 20px;
             right: 20px;
+            bottom: 20px;
             width: 350px;
             height: 250px;
-            border: 3px solid white;
             border-radius: 12px;
             overflow: hidden;
+            border: 3px solid white;
             z-index: 10;
+            background-color: white;
         }
+
+        /* 현재 위치 버튼 */
+        .current-location-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
     </style>
 </head>
 
@@ -141,23 +160,28 @@
             <!-- 탭 메뉴 -->
             <div class="tab-container">
 
-                <button class="tab-button active-tab" onclick="searchReligion('절', this)">
+                <button class="tab-button active-tab"
+                    onclick="searchReligion('절', this)">
                     절
                 </button>
 
-                <button class="tab-button" onclick="searchReligion('교회', this)">
+                <button class="tab-button"
+                    onclick="searchReligion('교회', this)">
                     교회
                 </button>
 
-                <button class="tab-button" onclick="searchReligion('성당', this)">
+                <button class="tab-button"
+                    onclick="searchReligion('성당', this)">
                     성당
                 </button>
 
-                <button class="tab-button" onclick="searchReligion('모스크', this)">
+                <button class="tab-button"
+                    onclick="searchReligion('모스크', this)">
                     모스크
                 </button>
 
-                <button class="tab-button" onclick="searchReligion('원불교', this)">
+                <button class="tab-button"
+                    onclick="searchReligion('원불교', this)">
                     원불교
                 </button>
 
@@ -168,9 +192,16 @@
 
         </div>
 
-        <!-- 지도 -->
+        <!-- 지도 영역 -->
         <div class="map-area">
 
+            <!-- 현재 위치 버튼 -->
+            <button class="current-location-button"
+                onclick="moveToCurrentLocation()">
+                현재 위치
+            </button>
+
+            <!-- 지도 -->
             <div id="map"></div>
 
             <!-- 로드뷰 -->
@@ -188,11 +219,17 @@
         // 지도 객체
         let map;
 
-        // 장소 검색 객체
+        // 장소 검색 서비스
         let placesService;
+
+        // 현재 위치 저장
+        let currentPosition;
 
         // 마커 배열
         let markers = [];
+
+        // 현재 위치 마커
+        let currentMarker;
 
         // 로드뷰 객체
         let roadview;
@@ -200,13 +237,10 @@
         // 로드뷰 클라이언트
         let roadviewClient;
 
-        // 현재 위치
-        let currentPosition;
-
         // 지도 로딩 완료 후 실행
         kakao.maps.load(function () {
 
-            // 위치 권한 요청
+            // 현재 위치 요청
             navigator.geolocation.getCurrentPosition(
 
                 function (position) {
@@ -220,7 +254,7 @@
 
                 function () {
 
-                    // 실패 시 서울시청
+                    // 위치 권한 거부 시 서울시청
                     createMap(37.5665, 126.9780);
 
                 }
@@ -232,63 +266,89 @@
         // 지도 생성 함수
         function createMap(latitude, longitude) {
 
-            currentPosition = new kakao.maps.LatLng(latitude, longitude);
+            currentPosition = new kakao.maps.LatLng(
+                latitude,
+                longitude
+            );
+
+            // 지도 옵션
+            const mapOption = {
+                center: currentPosition,
+                level: 5
+            };
 
             // 지도 생성
             map = new kakao.maps.Map(
                 document.getElementById("map"),
-                {
-                    center: currentPosition,
-                    level: 5
-                }
+                mapOption
             );
 
             // 교통 정보 표시
-            map.addOverlayMapTypeId(kakao.maps.MapTypeId.TRAFFIC);
+            map.addOverlayMapTypeId(
+                kakao.maps.MapTypeId.TRAFFIC
+            );
 
             // 현재 위치 마커
-            const currentMarker = new kakao.maps.Marker({
+            currentMarker = new kakao.maps.Marker({
                 map: map,
                 position: currentPosition
             });
 
-            // 현재 위치 인포윈도우
-            const infoWindow = new kakao.maps.InfoWindow({
-                content: "<div style='padding:5px;'>현재 위치</div>"
-            });
+            // 현재 위치 안내창
+            const currentInfoWindow =
+                new kakao.maps.InfoWindow({
 
-            infoWindow.open(map, currentMarker);
+                    content:
+                        "<div style='padding:5px;'>현재 위치</div>"
 
-            // 장소 검색 서비스 생성
-            placesService = new kakao.maps.services.Places();
+                });
 
-            // 로드뷰 생성
-            roadview = new kakao.maps.Roadview(
-                document.getElementById("roadview")
+            currentInfoWindow.open(
+                map,
+                currentMarker
             );
 
-            roadviewClient = new kakao.maps.RoadviewClient();
+            // 장소 검색 서비스 생성
+            placesService =
+                new kakao.maps.services.Places();
+
+            // 로드뷰 생성
+            roadview =
+                new kakao.maps.Roadview(
+                    document.getElementById("roadview")
+                );
+
+            // 로드뷰 클라이언트 생성
+            roadviewClient =
+                new kakao.maps.RoadviewClient();
 
             // 기본 검색 실행
-            searchReligion("절", document.querySelector(".tab-button"));
+            searchReligion(
+                "절",
+                document.querySelector(".tab-button")
+            );
 
         }
 
         // 종교 시설 검색 함수
         function searchReligion(keyword, buttonElement) {
 
-            // 탭 스타일 초기화
-            document.querySelectorAll(".tab-button")
-                .forEach(function (button) {
-                    button.classList.remove("active-tab");
-                });
-
-            buttonElement.classList.add("active-tab");
-
             // 기존 마커 제거
             removeMarkers();
 
-            // 검색 실행
+            // 탭 활성화 초기화
+            document
+                .querySelectorAll(".tab-button")
+                .forEach(function (button) {
+
+                    button.classList.remove("active-tab");
+
+                });
+
+            // 현재 탭 활성화
+            buttonElement.classList.add("active-tab");
+
+            // 키워드 검색
             placesService.keywordSearch(
                 keyword,
                 placesSearchCallback
@@ -296,10 +356,13 @@
 
         }
 
-        // 검색 결과 처리
+        // 검색 결과 처리 함수
         function placesSearchCallback(data, status) {
 
-            if (status === kakao.maps.services.Status.OK) {
+            if (
+                status ===
+                kakao.maps.services.Status.OK
+            ) {
 
                 displayPlaces(data);
 
@@ -311,35 +374,46 @@
 
         }
 
-        // 장소 표시 함수
+        // 장소 출력 함수
         function displayPlaces(places) {
 
-            const resultList = document.getElementById("resultList");
+            const resultList =
+                document.getElementById("resultList");
 
             resultList.innerHTML = "";
 
-            const bounds = new kakao.maps.LatLngBounds();
+            const bounds =
+                new kakao.maps.LatLngBounds();
 
             places.forEach(function (place) {
 
-                const position = new kakao.maps.LatLng(place.y, place.x);
+                const position =
+                    new kakao.maps.LatLng(
+                        place.y,
+                        place.x
+                    );
 
-                // 마커 이미지 설정
-                const markerImage = createMarkerImage(place.place_name);
+                // 마커 이미지 생성
+                const markerImage =
+                    createMarkerImage(place.place_name);
 
                 // 마커 생성
                 const marker = new kakao.maps.Marker({
+
                     map: map,
                     position: position,
                     image: markerImage
+
                 });
 
                 markers.push(marker);
 
+                // 지도 범위 추가
                 bounds.extend(position);
 
-                // 리스트 생성
-                const item = document.createElement("li");
+                // 리스트 아이템 생성
+                const item =
+                    document.createElement("li");
 
                 item.className = "result-item";
 
@@ -353,27 +427,36 @@
                     </div>
                 `;
 
-                // 클릭 이벤트
-                item.addEventListener("click", function () {
+                // 리스트 클릭 이벤트
+                item.addEventListener(
+                    "click",
+                    function () {
 
-                    map.setCenter(position);
-                    map.setLevel(3);
+                        map.setCenter(position);
 
-                    showRoadview(position);
+                        map.setLevel(3);
 
-                });
+                        showRoadview(position);
+
+                    }
+                );
 
                 // 마커 클릭 이벤트
-                kakao.maps.event.addListener(marker, "click", function () {
+                kakao.maps.event.addListener(
+                    marker,
+                    "click",
+                    function () {
 
-                    showRoadview(position);
+                        showRoadview(position);
 
-                });
+                    }
+                );
 
                 resultList.appendChild(item);
 
             });
 
+            // 지도 범위 자동 조정
             map.setBounds(bounds);
 
         }
@@ -381,40 +464,56 @@
         // 마커 이미지 생성 함수
         function createMarkerImage(placeName) {
 
-            let imageUrl = "";
+            let imagePath = "";
 
-            // 종교별 마커 이미지
+            // 절
             if (placeName.includes("절")) {
 
-                imageUrl =
-                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png";
-
-            } else if (placeName.includes("교회")) {
-
-                imageUrl =
-                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png";
-
-            } else if (placeName.includes("성당")) {
-
-                imageUrl =
-                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_blue.png";
-
-            } else if (placeName.includes("모스크")) {
-
-                imageUrl =
-                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_green.png";
-
-            } else {
-
-                imageUrl =
-                    "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_yellow.png";
+                imagePath = "Bu.jpeg";
 
             }
 
-            const imageSize = new kakao.maps.Size(32, 35);
+            // 교회
+            else if (
+                placeName.includes("교회")
+            ) {
 
+                imagePath = "Ch.jpeg";
+
+            }
+
+            // 성당
+            else if (
+                placeName.includes("성당")
+            ) {
+
+                imagePath = "Maria.jpeg";
+
+            }
+
+            // 모스크
+            else if (
+                placeName.includes("모스크")
+            ) {
+
+                imagePath = "Mu.jpeg";
+
+            }
+
+            // 원불교
+            else {
+
+                imagePath = "Won.jpeg";
+
+            }
+
+            // 마커 크기
+            const imageSize =
+                new kakao.maps.Size(50, 50);
+
+            // 마커 이미지 반환
             return new kakao.maps.MarkerImage(
-                imageUrl,
+                imagePath,
                 imageSize
             );
 
@@ -424,8 +523,11 @@
         function showRoadview(position) {
 
             roadviewClient.getNearestPanoId(
+
                 position,
+
                 50,
+
                 function (panoId) {
 
                     if (panoId) {
@@ -438,11 +540,21 @@
                     }
 
                 }
+
             );
 
         }
 
-        // 마커 제거 함수
+        // 현재 위치 이동 함수
+        function moveToCurrentLocation() {
+
+            map.setCenter(currentPosition);
+
+            map.setLevel(4);
+
+        }
+
+        // 기존 마커 제거 함수
         function removeMarkers() {
 
             markers.forEach(function (marker) {
